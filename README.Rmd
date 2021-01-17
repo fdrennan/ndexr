@@ -37,90 +37,138 @@ This is a basic example which shows you how to solve a common problem:
 ```{r example}
 library(ndexr)
 con <- connection_postgres()
-reddit <- connection_reddit()
-```
+reddit_con <- connection_reddit()
+reddit_response <- reddit_crawl_submissions(reddit_con)
+reddit_data <- clean_reddit_data(reddit_response)
+glimpse(reddit_data)
+write_csv(reddit_data, "reddit_data.csv")
+reddit_data <- read_csv("reddit_data.csv")
+reddit_data
+spec(reddit_data)
 
-```{r}
 
-reddit_crawl_submissions <- function(reddit_con, subreddit = NULL, limit = 10) {
-  if (!is.null(subreddit)) {
-    submission_response <- iterate(reddit_con$subreddit(subreddit)$new(limit = limit))
-  } else {
-    submission_response <- iterate(reddit_con$front$new(limit = limit))
-  } 
   
-  names_nfp <- names(submission_response[[1]])
-  reddit_data <- map_dfr(
-    submission_response, 
-    function(submission){
-      map_dfr(
-        names_nfp,
-        function(submission_title) {
-          table_obj <- tibble(
-            name = submission_title,
-            object = unlist(as.character(submission[submission_title]))
-          )
-          table_obj$unique_id <- 
-            paste(
-              submission$id, 
-              submission$author, 
-              submission$subreddit, 
-              submission$created_utc, 
-              sep = "-"
-            )
-          table_obj
-        }
-      )
-    }
-  )
+if (!dbExistsTable(conn = con, name = 'submissions')) {
+ dbCreateTable(conn = con, name = 'submissions', fields = reddit_data) 
 }
-
-
+dbAppendTable(conn = con, name = 'submissions', value = reddit_data)
 ```
 
 ```{r}
-
-praw <- import("praw")
-reddit_con <- praw$Reddit(
-  client_id = Sys.getenv("REDDIT_CLIENT"),
-  client_secret = Sys.getenv("REDDIT_AUTH"),
-  user_agent = Sys.getenv("USER_AGENT"),
-  username = Sys.getenv("USERNAME"),
-  password = Sys.getenv("PASSWORD")
+all_rows <- scan("scratch.txt", what="", sep="\n")
+map_chr(
+  all_rows,
+  function(row) {
+    rows <- str_squish(row)
+    insert_value <- str_remove(str_extract(rows, "^.+\ "), " = ")
+    response <- str_replace(rows, "\\(\\)", glue("({insert_value})"))
+    message(response)
+    response
+  }
 )
 
-# debug(reddit_crawl_submissions)
-reddit_response <- reddit_crawl_submissions(reddit_con)
-```
-
-```{r}
-clean_reddit_data <- function(reddit_data = NULL) {
-  
-  reddit_data <- 
-    reddit_data %>% 
-    select(unique_id, name, object) %>% 
-    pivot_wider(names_from = name, values_from = object, values_fill = NA)
-  
-  reddit_data <- map_df(
-  reddit_data_split,
-    function(submission) {
-      map(submission, function(item) {
-        unlist(as.character(item))
-      })
-    }
-  )
-  
-  reddit_data
-}
-
-reddit_data <- clean_reddit_data(reddit_response)
-
-# reddit_data <- split(reddit_data, reddit_data$unique_id)
-
-# glimpse(reddit_data)
-# write_csv(reddit_data, "reddit_data.csv")
-reddit_data <- read_csv("reddit_data.csv")
-
-
-reddit_data
+transmute(
+reddit_data,
+unique_id = as.character(unique_id),
+allow_live_comments = as.logical(allow_live_comments),
+archived = as.logical(archived),
+author = as.character(author),
+author_flair_type = as.character(author_flair_type),
+author_fullname = as.character(author_fullname),
+author_patreon_flair = as.logical(author_patreon_flair),
+author_premium = as.logical(author_premium),
+can_gild = as.logical(can_gild),
+can_mod_post = as.logical(can_mod_post),
+clear_vote = as.character(clear_vote),
+clicked = as.logical(clicked),
+comment_limit = as.double(comment_limit),
+comment_sort = as.character(comment_sort),
+comments = as.character(comments),
+contest_mode = as.logical(contest_mode),
+created = as.double(created),
+created_utc = as.double(created_utc),
+crosspost = as.character(crosspost),
+delete = as.character(delete),
+disable_inbox_replies = as.character(disable_inbox_replies),
+domain = as.character(domain),
+downs = as.double(downs),
+downvote = as.character(downvote),
+duplicates = as.character(duplicates),
+edit = as.character(edit),
+edited = as.logical(edited),
+enable_inbox_replies = as.character(enable_inbox_replies),
+flair = as.character(flair),
+fullname = as.character(fullname),
+gild = as.character(gild),
+gilded = as.double(gilded),
+hidden = as.logical(hidden),
+hide = as.character(hide),
+hide_score = as.logical(hide_score),
+id = as.character(id),
+id_from_url = as.character(id_from_url),
+is_crosspostable = as.logical(is_crosspostable),
+is_meta = as.logical(is_meta),
+is_original_content = as.logical(is_original_content),
+is_reddit_media_domain = as.logical(is_reddit_media_domain),
+is_robot_indexable = as.logical(is_robot_indexable),
+is_self = as.logical(is_self),
+is_video = as.logical(is_video),
+link_flair_background_color = as.character(link_flair_background_color),
+link_flair_text_color = as.character(link_flair_text_color),
+link_flair_type = as.character(link_flair_type),
+locked = as.logical(locked),
+mark_visited = as.character(mark_visited),
+media_only = as.logical(media_only),
+mod = as.character(mod),
+name = as.character(name),
+no_follow = as.logical(no_follow),
+num_comments = as.double(num_comments),
+num_crossposts = as.double(num_crossposts),
+over_18 = as.logical(over_18),
+parent_whitelist_status = as.character(parent_whitelist_status),
+parse = as.character(parse),
+permalink = as.character(permalink),
+pinned = as.logical(pinned),
+pwls = as.double(pwls),
+quarantine = as.logical(quarantine),
+reply = as.character(reply),
+report = as.character(report),
+save = as.character(save),
+saved = as.logical(saved),
+score = as.double(score),
+selftext = as.character(selftext),
+send_replies = as.logical(send_replies),
+shortlink = as.character(shortlink),
+spoiler = as.logical(spoiler),
+stickied = as.logical(stickied),
+STR_FIELD = as.character(STR_FIELD),
+subreddit = as.character(subreddit),
+subreddit_id = as.character(subreddit_id),
+subreddit_name_prefixed = as.character(subreddit_name_prefixed),
+subreddit_subscribers = as.double(subreddit_subscribers),
+subreddit_type = as.character(subreddit_type),
+thumbnail = as.character(thumbnail),
+title = as.character(title),
+total_awards_received = as.double(total_awards_received),
+unhide = as.character(unhide),
+unsave = as.character(unsave),
+ups = as.double(ups),
+upvote = as.character(upvote),
+upvote_ratio = as.double(upvote_ratio),
+url = as.character(url),
+visited = as.logical(visited),
+whitelist_status = as.character(whitelist_status),
+wls = as.double(wls),
+link_flair_css_class = as.character(link_flair_css_class),
+link_flair_richtext = as.character(link_flair_richtext),
+link_flair_text = as.character(link_flair_text),
+media = as.character(media),
+media_embed = as.character(media_embed),
+secure_media = as.character(secure_media),
+secure_media_embed = as.character(secure_media_embed),
+thumbnail_height = as.character(thumbnail_height),
+thumbnail_width = as.character(thumbnail_width),
+suggested_sort = as.character(suggested_sort),
+selftext_html = as.character(selftext_html)
+)
 ```
