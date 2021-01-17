@@ -1,0 +1,29 @@
+Package: ndexr
+Type: Package
+Title: Powers the NDEXR Platform
+Version: 0.1.0
+Author: Freddy Drennan 
+Maintainer: Freddy Drennan <fdrennan@ndexr.com>
+Description: More about what it does (maybe more than one line)
+    Use four spaces when indenting paragraphs within the Description.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends: 
+    dplyr,
+    purrr,
+    reticulate,
+    devtools,
+    usethis,
+    stringr,
+    lubridate,
+    roxygen2,
+    glue,
+    RPostgres,
+    DBI,
+    dbplyr,
+    tidyr,
+    janitor,
+    dbx,
+    readr
+RoxygenNote: 7.1.1

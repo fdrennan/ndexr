@@ -1,0 +1,5 @@
+.Renviron
+./Dockerfiles/database.env
+.env
+.Rproj.user
+.idea

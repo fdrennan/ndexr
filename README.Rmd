@@ -1,0 +1,126 @@
+---
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# ndexr
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+The goal of ndexr is to ...
+
+## Installation
+
+You can install the released version of ndexr from [CRAN](https://CRAN.R-project.org) with:
+
+``` r
+install.packages("ndexr")
+```
+
+## Example
+
+This is a basic example which shows you how to solve a common problem:
+
+```{r example}
+library(ndexr)
+con <- connection_postgres()
+reddit <- connection_reddit()
+```
+
+```{r}
+
+reddit_crawl_submissions <- function(reddit_con, subreddit = NULL, limit = 10) {
+  if (!is.null(subreddit)) {
+    submission_response <- iterate(reddit_con$subreddit(subreddit)$new(limit = limit))
+  } else {
+    submission_response <- iterate(reddit_con$front$new(limit = limit))
+  } 
+  
+  names_nfp <- names(submission_response[[1]])
+  reddit_data <- map_dfr(
+    submission_response, 
+    function(submission){
+      map_dfr(
+        names_nfp,
+        function(submission_title) {
+          table_obj <- tibble(
+            name = submission_title,
+            object = unlist(as.character(submission[submission_title]))
+          )
+          table_obj$unique_id <- 
+            paste(
+              submission$id, 
+              submission$author, 
+              submission$subreddit, 
+              submission$created_utc, 
+              sep = "-"
+            )
+          table_obj
+        }
+      )
+    }
+  )
+}
+
+
+```
+
+```{r}
+
+praw <- import("praw")
+reddit_con <- praw$Reddit(
+  client_id = Sys.getenv("REDDIT_CLIENT"),
+  client_secret = Sys.getenv("REDDIT_AUTH"),
+  user_agent = Sys.getenv("USER_AGENT"),
+  username = Sys.getenv("USERNAME"),
+  password = Sys.getenv("PASSWORD")
+)
+
+# debug(reddit_crawl_submissions)
+reddit_response <- reddit_crawl_submissions(reddit_con)
+```
+
+```{r}
+clean_reddit_data <- function(reddit_data = NULL) {
+  
+  reddit_data <- 
+    reddit_data %>% 
+    select(unique_id, name, object) %>% 
+    pivot_wider(names_from = name, values_from = object, values_fill = NA)
+  
+  reddit_data <- map_df(
+  reddit_data_split,
+    function(submission) {
+      map(submission, function(item) {
+        unlist(as.character(item))
+      })
+    }
+  )
+  
+  reddit_data
+}
+
+reddit_data <- clean_reddit_data(reddit_response)
+
+# reddit_data <- split(reddit_data, reddit_data$unique_id)
+
+# glimpse(reddit_data)
+# write_csv(reddit_data, "reddit_data.csv")
+reddit_data <- read_csv("reddit_data.csv")
+
+
+reddit_data
+```
