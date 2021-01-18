@@ -23,7 +23,13 @@ reddit_crawl_submissions <- function(reddit_con, subreddit = NULL, limit = 10) {
         function(submission_title) {
           table_obj <- tibble(
             name = submission_title,
-            object = unlist(as.character(submission[submission_title]))
+            object = {
+              tryCatch(expr = {
+                unlist(as.character(submission[submission_title]))
+              }, error = function(err) {
+                as.character('Error')
+              })
+            }
           )
           table_obj$unique_id <-
             paste(
