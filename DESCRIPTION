@@ -1,7 +1,7 @@
 Package: ndexr
 Type: Package
 Title: Powers the NDEXR Platform
-Version: 0.1.0
+Version: 1.0.0
 Author: Freddy Drennan 
 Maintainer: Freddy Drennan <fdrennan@ndexr.com>
 Description: More about what it does (maybe more than one line)
